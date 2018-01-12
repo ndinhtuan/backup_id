@@ -12,6 +12,7 @@ from extract_information import dectect_letters, choose_threshold
 from get_ratio import try_get_ratios, save_ratios_file, show_ratios_on_files, show_ratios_on_image
 from extract_information import connect_bounds
 from utils_shape import classify_box
+import matplotlib.pyplot as plt
 
 def get_path_file(dir):
     return [os.path.join(dir, i) for i in os.listdir(dir) if os.path.isfile(os.path.join(dir, i))]
@@ -195,13 +196,45 @@ def eliminate_not_box(boxes):
 
     for i in range(len(boxes)):
         
-        if boxes[i][3] > boxes[i][2] : 
+        if boxes[i][3] * 1.0 / boxes[i][2] > 2: 
             not_box.append(i)
 
     for i in range(len(not_box)):
         del boxes[not_box[len(not_box) - 1- i]]
 
-imgs = get_path_file('/home/tuan/Desktop/IdentityCard/Source')
+def statistic_height_box(boxes):
+    tmp = []
+    for box in boxes :
+        tmp.append(box[3])
+
+    print max(tmp)
+    # x_axis = sorted(list(set(tmp)))
+    # y_axis = [] 
+
+    # for i in x_axis:
+    #     y_axis.append(tmp.count(i))
+    
+    # y_pos = np.arange(len(y_axis))
+    # plt.bar(y_pos, y_axis, alpha=1, align="center")
+    # plt.xticks(y_pos, x_axis)
+    # plt.ylabel("#number")
+    # plt.xlabel("len")
+    # plt.show()
+
+# cut boxes into 2 equaly part 
+def norm_boxes(boxes):
+    threshold_h = 70
+    barrier = 3
+
+    for i in range(len(boxes)):
+        if boxes[i][3] > threshold_h:
+            old_h = boxes[i][3]
+            boxes[i] = [boxes[i][0], boxes[i][1], boxes[i][2], old_h /2-barrier] #box1
+            box2 = [boxes[i][0], boxes[i][1] + old_h / 2 + barrier, boxes[i][2], old_h/2]
+            boxes.insert(i+1, box2)
+            i = i + 1
+
+imgs = get_path_file('/home/tuan/Desktop/IdentityCard/SourceImg1')
 path_source = '/home/tuan/Desktop/IdentityCard/SourceImg1'
 
 i = -1
@@ -226,6 +259,7 @@ for path_file in imgs:
     t1 = time.time()
     warped_img, copy_img, mask, contour_img = get_card_from_image(img)
     hh = copy.deepcopy(warped_img)
+    jj = copy.deepcopy(warped_img)
     t2 = time.time()
     duration += (t2 - t1)
 
@@ -236,21 +270,34 @@ for path_file in imgs:
         x, y, w, h = box 
         cv2.rectangle(hh, (x, y), (x+w, y+h), (0, 0, 255))
 
+    # statistic_height_box(boxes)
     eliminate_not_box(boxes)
+    norm_boxes(boxes)
+    #new norm boxes
+    for box in boxes :
+        x, y, w, h = box 
+        cv2.rectangle(jj, (x, y), (x+w, y+h), (0, 255, 0))
 
+    meaning_boxs = []
     classified = []
     h, w, _ = warped_img.shape
     classify_box(boxes, ratios, h, w, classified)
-    for classi in classified:
+    for classi, i in zip(classified, range(len(classified))):
+        
         connect_bounds(classi)
         # make_box_bigger(classi)
         for box in classi:
-            cv2.rectangle(warped_img, (box[0], box[1]), (box[0]+box[2], box[1]+box[3]), (0, 255, 0), 2)
 
+            w_img = warped_img.shape[1]
+            new_width = w_img / ratios[i][2] - w_img / ratios[i][0]
+            box = (box[0], box[1], int(new_width), box[3])
+            cv2.rectangle(warped_img, (box[0], box[1]), (box[0]+box[2], box[1]+box[3]), (0, 255, 0), 2)
+    # statistic_height_box(meaning_boxs)
     tmp = draw_information(warped_img, ratios)
     cv2.imshow("classified", tmp)
     
     cv2.imshow("img", hh)#cv2.resize(img,None, fx=0.3, fy=0.3))
+    cv2.imshow("norm", jj)
     cv2.imshow("Warped", warped_img)
     cv2.waitKey(0)
 
