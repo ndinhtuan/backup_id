@@ -11,7 +11,7 @@ import time
 from extract_information import dectect_letters, choose_threshold
 from get_ratio import try_get_ratios, save_ratios_file, show_ratios_on_files, show_ratios_on_image
 from extract_information import connect_bounds
-from utils_shape import classify_box
+from utils_shape import classify_box, remove_box_inside_other_box
 import matplotlib.pyplot as plt
 
 def get_path_file(dir):
@@ -231,10 +231,10 @@ def norm_boxes(boxes):
             old_h = boxes[i][3]
             boxes[i] = [boxes[i][0], boxes[i][1], boxes[i][2], old_h /2-barrier] #box1
             box2 = [boxes[i][0], boxes[i][1] + old_h / 2 + barrier, boxes[i][2], old_h/2]
-            boxes.insert(i+1, box2)
+            boxes.insert(i, box2)
             i = i + 1
 
-imgs = get_path_file('/home/tuan/Desktop/IdentityCard/SourceImg1')
+imgs = get_path_file('/home/tuan/Desktop/IdentityCard/Source')
 path_source = '/home/tuan/Desktop/IdentityCard/SourceImg1'
 
 i = -1
@@ -285,12 +285,14 @@ for path_file in imgs:
     for classi, i in zip(classified, range(len(classified))):
         
         connect_bounds(classi)
+        remove_box_inside_other_box(classi)
         # make_box_bigger(classi)
         for box in classi:
 
             w_img = warped_img.shape[1]
-            new_width = w_img / ratios[i][2] - w_img / ratios[i][0]
-            box = (box[0], box[1], int(new_width), box[3])
+            new_x = w_img*1.0 / ratios[i][0]
+            new_width = w_img / ratios[i][2] - w_img*1.0 / ratios[i][0]
+            box = (int(new_x), box[1], int(new_width), box[3])
             cv2.rectangle(warped_img, (box[0], box[1]), (box[0]+box[2], box[1]+box[3]), (0, 255, 0), 2)
     # statistic_height_box(meaning_boxs)
     tmp = draw_information(warped_img, ratios)

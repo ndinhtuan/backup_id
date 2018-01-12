@@ -126,9 +126,10 @@ def is_connected(bound1, bound2):
     up_y2 = y2
     down_y2 = y2 + h2
 
-    if (y1 <= up_y2 and up_y2 < y1 + (2.0 / 3) * h1): # box 2 is below box 1
+    threshold_ratio = 0.8
+    if (y1 <= up_y2 and up_y2 < y1 + threshold_ratio * h1): # box 2 is below box 1
         return True
-    if (y1 + h1 >= down_y2 and down_y2 > y1 + (1.0 / 3) * h1): # box 2 is above box 1
+    if (y1 + h1 >= down_y2 and down_y2 > y1 + (1 - threshold_ratio) * h1): # box 2 is above box 1
         return True
     return False
 
