@@ -185,9 +185,9 @@ def draw_information(warped_img, ratios):
 def make_box_bigger(boxes):
     for i in range(len(boxes)):
         x, y, w, h = boxes[i] 
-        x -= 5 #x 
-        y -= 5 #y
-        w += 60 #w 
+        x -= 25 #x 
+        # y -= 5 #y
+        w += 40 #w 
         h += 10 #h
         boxes[i] = (x, y, w, h)
 
@@ -234,7 +234,7 @@ def norm_boxes(boxes):
             boxes.insert(i, box2)
             i = i + 1
 
-imgs = get_path_file('/home/tuan/Desktop/IdentityCard/Source')
+imgs = get_path_file('/home/tuan/Desktop/IdentityCard/SourceImg1')
 path_source = '/home/tuan/Desktop/IdentityCard/SourceImg1'
 
 i = -1
@@ -252,12 +252,14 @@ for path_file in imgs:
     print "image " + str(i)
     i += 1
     img = cv2.imread(path_file)
+    
     img1 = copy.deepcopy(img)
     if img is None : 
         print "img is None"
         continue
     t1 = time.time()
     warped_img, copy_img, mask, contour_img = get_card_from_image(img)
+    
     hh = copy.deepcopy(warped_img)
     jj = copy.deepcopy(warped_img)
     t2 = time.time()
@@ -289,11 +291,11 @@ for path_file in imgs:
         # make_box_bigger(classi)
         for box in classi:
 
-            w_img = warped_img.shape[1]
-            new_x = w_img*1.0 / ratios[i][0]
-            new_width = w_img / ratios[i][2] - w_img*1.0 / ratios[i][0]
-            box = (int(new_x), box[1], int(new_width), box[3])
-            cv2.rectangle(warped_img, (box[0], box[1]), (box[0]+box[2], box[1]+box[3]), (0, 255, 0), 2)
+            # w_img = warped_img.shape[1]
+            # new_x = w_img*1.0 / ratios[i][0]
+            # new_width = w_img / ratios[i][2] - w_img*1.0 / ratios[i][0]
+            # box = (int(new_x), box[1], int(new_width), box[3])
+            cv2.rectangle(warped_img, (box[0], box[1]), (box[0]+box[2], box[1]+box[3]), (0, 0, 255), 2)
     # statistic_height_box(meaning_boxs)
     tmp = draw_information(warped_img, ratios)
     cv2.imshow("classified", tmp)
