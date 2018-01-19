@@ -10,8 +10,8 @@ from PIL import Image, ImageDraw
 import time 
 from extract_information import dectect_letters, choose_threshold
 from get_ratio import try_get_ratios, save_ratios_file, show_ratios_on_files, show_ratios_on_image
-from extract_information import connect_bounds
-from utils_shape import classify_box, remove_box_inside_other_box
+from extract_information import connect_bounds, connect
+from utils_shape import classify_box, remove_box_inside_other_box, get_area_intersection, get_area_of_box
 import matplotlib.pyplot as plt
 
 def get_path_file(dir):
@@ -122,9 +122,7 @@ def testImg(warped_img):
     blueChannel = warped_img[:,:,0]
     greenChannel = warped_img[:, :, 1]
     threshold = 90
-    print ((blueChannel > threshold) + (greenChannel > threshold)) * 255
     biChannel = ((blueChannel < threshold) + (greenChannel < threshold)) * 255.0
-    print biChannel.shape
     cv2.imshow("testImg", cv2.resize(biChannel, None, fx=0.5, fy=0.5))
     cv2.waitKey(0)
 
@@ -234,7 +232,45 @@ def norm_boxes(boxes):
             boxes.insert(i, box2)
             i = i + 1
 
-imgs = get_path_file('/home/tuan/Desktop/IdentityCard/SourceImg1')
+def join_infor(boxes):
+
+    alpha = 0.3
+
+    i = 0
+    while i < len(boxes):
+        j = 0
+        while j < len(boxes):
+            if (i != j): 
+                
+                area_intersection = get_area_intersection(boxes[i], boxes[j])
+                area_min = min(get_area_of_box(boxes[i]), get_area_of_box(boxes[j]))
+
+                if area_intersection >= alpha * area_min:
+                    boxes[i] = connect(boxes[i], boxes[j])
+                    del boxes[j]
+                else :
+                    j += 1
+                continue
+            j += 1
+        i += 1
+
+def eliminate_small_area_box(boxes):
+
+    threshold_area = 500
+
+    i = 0
+    while i < len(boxes):
+        if (get_area_of_box(boxes[i]) < threshold_area): del boxes[i]
+        i += 1
+
+def show_area(boxes) :
+    list_area = []
+    for box in boxes:
+        list_area.append(get_area_of_box(box))
+    sorted(list_area)
+    print "Areas : ", list_area
+
+imgs = get_path_file('/home/tuan/Desktop/IdentityCard/Source')
 path_source = '/home/tuan/Desktop/IdentityCard/SourceImg1'
 
 i = -1
@@ -262,6 +298,7 @@ for path_file in imgs:
     
     hh = copy.deepcopy(warped_img)
     jj = copy.deepcopy(warped_img)
+    warped_img1 = copy.deepcopy(warped_img)
     t2 = time.time()
     duration += (t2 - t1)
 
@@ -286,8 +323,17 @@ for path_file in imgs:
     classify_box(boxes, ratios, h, w, classified)
     for classi, i in zip(classified, range(len(classified))):
         
-        connect_bounds(classi)
+        classi = connect_bounds(classi, warped_img1)
+        classi = connect_bounds(classi, warped_img1)
+    classified = []
+    h, w, _ = warped_img.shape
+    classify_box(boxes, ratios, h, w, classified)
+    for classi, i in zip(classified, range(len(classified))):
+        
+        classi = connect_bounds(classi, warped_img1)
+        eliminate_small_area_box(classi)
         remove_box_inside_other_box(classi)
+        join_infor(classi)
         # make_box_bigger(classi)
         for box in classi:
 

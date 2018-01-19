@@ -33,10 +33,13 @@ def resize_box_infor(rect):
     x, y, w, h = rect
     return (x - 5, y, w + 10, h)
 
-def draw_box_infor(img, bound_rects) :
+def draw_box_infor(img, bound_rects, color = None) :
     for rect in bound_rects :
         x, y, w, h = rect
-        cv2.rectangle(img, (x, y), (x + w, y + h),(0, 255, 0), 2)
+        if color is None :
+            cv2.rectangle(img, (x, y), (x + w, y + h),(0, 255, 0), 2)
+        else :
+            cv2.rectangle(img, (x, y), (x + w, y + h),color, 2)
 
 # function return bounds of information for each threshold value
 def dectect_letters(img, thresh_val):
@@ -129,12 +132,16 @@ def is_connected(bound1, bound2):
     threshold_ratio = 0.8
 
     # too far to connect 2 box 
-    x12 = x1 + w1 
+    tmp1 = x1
+    tmp2 = x2
+    if (x1 > x2) :
+        tmp1 = x2 
+        tmp2 = x1
     w_max = max(w1, w2)
     
-    # if (abs(x12 - x2) >= w_max * 2.0 / 3): 
+    # if (tmp2 - tmp1 - w1 >= w_max * 2.0 / 3): 
     #     print "thresh ", w_max * 2.0 / 3
-    #     print x12 - x2, "value", abs(x12 - x2)
+    #     # print x12 - x2, "value", abs(x12 - x2)
     #     return False
 
     # laws allow to connect 2 box 
@@ -156,16 +163,49 @@ def connect(bound1, bound2):
 
     return (xmin, ymin, xmax - xmin, ymax - ymin) # new x, new y, new w, new h
 
+def cmp_two_box(box1, box2):
+    x1, y1, w1, h1 = box1 
+    x2, y2, w2, h2 = box2 
+    down_y1 = y1+h1 
+    down_y2 = y2+h2
+    if (x1 == x2 and y1 == y2 and w1 == w2 and h1 == h2): return 0
+
+    # if (y1 - y2 >= h1/4) : return 1
+    # else : return -1
+
+    if (abs(down_y1 - down_y2) <= max(h1, h2)/3):
+        if (x1 > x2): return -1
+        else : return 1
+    else:
+        if down_y1 - down_y2 > max(h1, h2)/3: return 1
+        if down_y2 - down_y1 > max(h1, h2)/3: return -1
+
+import copy
 #function connect 2 bound, which is near together
 # return connected bounds
-def connect_bounds(bound_rects):
+def connect_bounds(bound_rects, img):
     i = 0
+    tmp = copy.deepcopy(img)
+    tmp1 = copy.deepcopy(bound_rects)
+    # bound_rects = sorted(tmp1, lambda x, y: cmp_two_box(x, y))
 
+    # for box in bound_rects:
+    #     draw_box_infor(tmp, [box])
+    #     cv2.imshow("Tuan", tmp)
+    #     cv2.waitKey(0)
+        
     while i < len(bound_rects) - 1:
+        tma = copy.deepcopy(img)
         if (is_connected(bound_rects[i], bound_rects[i + 1])):
-            #print "BEFORE : {}".format(bound_rects[i])
+            # h = [bound_rects[i], bound_rects[i + 1]]
+            # draw_box_infor(tma, h, (0, 0, 255))
+            # cv2.imshow("tma", tma)
+            # cv2.waitKey(0)
+            # print "BEFORE : {}".format(bound_rects[i])
             bound_rects[i] = connect(bound_rects[i], bound_rects[i + 1])
-            #print "AFTER : {}".format(bound_rects[i])
+            # print "AFTER : {}".format(bound_rects[i])
             del bound_rects[i + 1]
         else :
             i += 1
+    
+    return bound_rects

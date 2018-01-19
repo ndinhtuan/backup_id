@@ -94,3 +94,14 @@ def classify_box(boxes, ratios, h_img, w_img, classified) :
 
         if (areas_intersections[index_max] > 0 and areas_intersections[index_max] > polygon_box.area/2) : # if has one or more field intersect with box
             classified[index_max].append(box)
+
+def get_area_intersection(box1, box2):
+    polygon1 = create_polygon_from_box(box1)
+    polygon2 = create_polygon_from_box(box2)
+
+    tmp = polygon1.intersection(polygon2)
+    return tmp.area
+
+def get_area_of_box(box):
+
+    return create_polygon_from_box(box).area
